@@ -6,7 +6,7 @@ class Wirecutter_UserAction : ScriptedUserAction
 	[Attribute("0", UIWidgets.ComboBox, "Instrument type", "", ParamEnumArray.FromEnum(SCR_EInstrumentType) )]
 	protected SCR_EInstrumentType m_eInstrumentType;
 	
-		[Attribute("", UIWidgets.Coords)]
+	[Attribute("", UIWidgets.Coords)]
 	private vector m_vSoundOffset;
 	
 	
@@ -15,105 +15,86 @@ class Wirecutter_UserAction : ScriptedUserAction
 	protected AudioHandle m_AudioHandle = AudioHandle.Invalid;
 	protected static ref ScriptInvokerInt2 s_onFenceCut;
 	
-	override void OnActionStart(IEntity pUserEntity)
-	{
-		if (s_onFenceCut)
+	override void OnActionStart(IEntity pUserEntity) {
+		if (s_onFenceCut) {
 			s_onFenceCut.Invoke(GetGame().GetPlayerManager().GetPlayerIdFromControlledEntity(pUserEntity), m_eInstrumentType);
+		}
 		
-		SCR_SoundManagerEntity soundManagerEntity = GetGame().GetSoundManagerEntity();
-		if (!soundManagerEntity)
-			return;
-				
-		if (!m_AudioSourceConfiguration || !m_AudioSourceConfiguration.IsValid())
-			return;
+		if (!m_AudioSourceConfiguration || !m_AudioSourceConfiguration.IsValid()) { return; }
 		
-		SCR_AudioSource audioSource = soundManagerEntity.CreateAudioSource(GetOwner(), m_AudioSourceConfiguration);
-		if (!audioSource)
-			return;
+		const IEntity owner = GetOwner();
+		SCR_SoundManagerModule soundManager = SCR_SoundManagerModule.GetInstance(owner.GetWorld());
+		if (!soundManager) { return; }
+			
+		vector worldPosition = owner.CoordToParent(m_vSoundOffset);
 		
-		vector mat[4];
-		IEntity owner = GetOwner();
-		owner.GetTransform(mat);		
-		mat[3] = owner.CoordToParent(m_vSoundOffset);
+		SCR_AudioSource audioSource = soundManager.CreateAudioSource(owner, m_AudioSourceConfiguration, worldPosition);
+		if (!audioSource) { return; }
 					
 		AudioSystem.TerminateSound(m_AudioHandle);
-		soundManagerEntity.PlayAudioSource(audioSource);			
+		soundManager.PlayAudioSource(audioSource);			
 		m_AudioHandle = audioSource.m_AudioHandle;
 	}
 	
-	override void OnActionCanceled(IEntity pOwnerEntity, IEntity pUserEntity)
-	{		
+	override void OnActionCanceled(IEntity pOwnerEntity, IEntity pUserEntity) {		
 		AudioSystem.TerminateSound(m_AudioHandle);
 		
-		SCR_SoundManagerEntity soundManagerEntity = GetGame().GetSoundManagerEntity();
-		if (!soundManagerEntity)
-			return;
+		SCR_SoundManagerModule soundManager = SCR_SoundManagerModule.GetInstance(pOwnerEntity.GetWorld());
+		if (!soundManager) { return; }
 				
-		if (!m_AudioSourceConfiguration || m_AudioSourceConfiguration.m_sSoundProject == string.Empty)
-			return;
+		if (!m_AudioSourceConfiguration || m_AudioSourceConfiguration.m_sSoundProject == string.Empty) { return; }
 		
 		SCR_AudioSourceConfiguration audioSourceConfiguration = new SCR_AudioSourceConfiguration;
 		audioSourceConfiguration.m_sSoundProject = m_AudioSourceConfiguration.m_sSoundProject;
 		audioSourceConfiguration.m_eFlags = m_AudioSourceConfiguration.m_eFlags;
 		audioSourceConfiguration.m_sSoundEventName = SCR_SoundEvent.SOUND_STOP_PLAYING;
-				
-		SCR_AudioSource audioSource = soundManagerEntity.CreateAudioSource(pOwnerEntity, audioSourceConfiguration);
-		if (!audioSource)
-			return;
 		
-		vector mat[4];
-		pOwnerEntity.GetTransform(mat);
-		mat[3] = pOwnerEntity.CoordToParent(m_vSoundOffset);
+		vector worldPosition = pOwnerEntity.CoordToParent(m_vSoundOffset);
+				
+		SCR_AudioSource audioSource = soundManager.CreateAudioSource(pOwnerEntity, audioSourceConfiguration, worldPosition);
+		if (!audioSource) { return; }
 					
-		soundManagerEntity.PlayAudioSource(audioSource, mat);			
+		soundManager.PlayAudioSource(audioSource);			
 		m_AudioHandle = audioSource.m_AudioHandle;
 	}
 	
-	IEntity GetWirecutter(notnull IEntity ent)
-	{
+	IEntity GetWirecutter(notnull IEntity ent) {
 		SCR_GadgetManagerComponent gadgetManager = SCR_GadgetManagerComponent.GetGadgetManager(ent);
-		if (!gadgetManager)
-			return null;
+		if (!gadgetManager) { return null; }
 		
 		return gadgetManager.GetHeldGadget();
 	}
 	
 
-	void SetNewGadgetManager(IEntity from, IEntity to)
-	{
+	void SetNewGadgetManager(IEntity from, IEntity to) {
 		m_GadgetManager = SCR_GadgetManagerComponent.GetGadgetManager(to);
 	}
 	
 	
-	override bool CanBeShownScript(IEntity user)
-	{
-		if (!m_GadgetManager)
-		{
+	override bool CanBeShownScript(IEntity user) {
+		if (!m_GadgetManager) {
 			m_GadgetManager = SCR_GadgetManagerComponent.GetGadgetManager(user);
 			
 			SCR_PlayerController playerController = SCR_PlayerController.Cast(GetGame().GetPlayerController());
-			if (playerController)
+			if (playerController) {
 				playerController.m_OnControlledEntityChanged.Insert(SetNewGadgetManager);
-			
+			}
+
 			return true;
 		};
 					
-		if (!SCR_WirecutterComponent.Cast(m_GadgetManager.GetHeldGadgetComponent()))
-			return false;
+		if (!SCR_WirecutterComponent.Cast(m_GadgetManager.GetHeldGadgetComponent())) { return false; }
 		
 		return true;
 	}
 	
-		override void PerformAction(IEntity pOwnerEntity, IEntity pUserEntity)
-	{
-		if (!Replication.IsServer())
-              return;
+	override void PerformAction(IEntity pOwnerEntity, IEntity pUserEntity) {
+		if (!Replication.IsServer()) { return; }
 		
 		SCR_EntityHelper.DeleteEntityAndChildren(pOwnerEntity);
 	}
 
-void ~Wirecutter_UserAction()
-	{
+    void ~Wirecutter_UserAction() {
 		AudioSystem.TerminateSound(m_AudioHandle);
 	}
 };
