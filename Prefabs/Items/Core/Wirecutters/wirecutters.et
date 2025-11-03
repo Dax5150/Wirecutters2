@@ -5,9 +5,10 @@ GenericEntity {
    Attributes SCR_ItemAttributeCollection "{62F35B4168194675}" {
     ItemDisplayName UIInfo "{62F35B4168194649}" {
      Name "Wirecutters"
+     Description "Standard everyday pair of wirecutters, used to cut chain-link fences and barbed wire."
     }
     ItemPhysAttributes ItemPhysicalAttributes "{62F35B4168194640}" {
-     Weight 0.01
+     Weight 0.15
      SizeSetupStrategy Manual
      ItemVolume 10
      RestingAdditiveRotationLS 0 0 0
@@ -33,8 +34,9 @@ GenericEntity {
       Supress1hShooting 0
      }
     }
+    CommonItemType "FLASHLIGHT"
     m_Size SLOT_1x1
-    m_SlotType SLOT_LOADOUT_STORAGE
+    m_eQuickSlotSize SLOT_1x1
    }
   }
   MeshObject "{62F35B411275726A}" {
